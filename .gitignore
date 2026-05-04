@@ -1,0 +1,7 @@
+database/
+.DS_Store
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.positai

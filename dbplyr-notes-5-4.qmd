@@ -1,0 +1,97 @@
+---
+title: "dbplyr"
+author: "Joaquin Sandoval"
+format: html
+editor: visual
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(DBI) # Makes connection to databases 
+library(duckdb)
+library(dbplyr)
+```
+
+### Connecting to a database 
+
+```{r, message=FALSE}
+conn <- DBI:: dbConnect(duckdb::duckdb(), 
+                        dbdir = "database/database.duckdb")
+conn
+```
+
+### Check for tables present in the database
+
+```{r}
+# Can refer to connection object - own class of database 
+DBI:: dbListTables(conn)
+```
+
+### Look at one table 
+
+```{r}
+species <- tbl(conn, "Species")
+# Does not return a dataframe, unique 'representation' of data - database object - no number of rows
+# species <- read_csv
+
+```
+
+```{r}
+
+# Double quote entire query, single quote for object within query 
+species_a <- dbGetQuery(conn, "SELECT * FROM Species WHERE Code LIKE 'a%'")
+# This returns an actual dataframe. 
+species_a
+```
+
+### Dbplyr - more efficient way of doing this 
+
+```{r}
+species %>%
+  filter(Relevance == "Study species") %>%
+  select(Code, Scientific_name) %>%
+  arrange(Scientific_name) %>%
+  head(3) %>% 
+  show_query()
+
+```
+
+```{r}
+species %>%
+  filter(Relevance == "Study species") %>%
+  select(Code, Scientific_name) %>%
+  arrange(Scientific_name) %>%
+  head(3) %>% 
+  # Store query results in a df 
+  collect()
+
+```
+
+### Mutate 
+
+```{r}
+species_x <- species %>% 
+  mutate(Xcode = paste("X_", Code)) %>% 
+  collect()
+```
+
+### Join 
+
+```{r}
+eggs_db <- tbl(conn, "Bird_eggs")
+nest_db <- tbl(conn, "Bird_nests")
+```
+
+```{r}
+nest_eggs_df <- nest_db %>% 
+  left_join(eggs_db, by = "Nest_ID") %>% 
+  head(5) %>% 
+ # show_query() These queries are not always the most efficient
+  collect
+```
+
+### Closing the connection 
+
+```{r}
+DBI:: dbDisconnect(conn, shutdown = TRUE)
+```
