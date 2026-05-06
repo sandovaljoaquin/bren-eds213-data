@@ -5,3 +5,6 @@ database/
 .RData
 .Ruserdata
 .positai
+database.duckdb
+
+
