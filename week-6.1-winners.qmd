@@ -1,0 +1,79 @@
+---
+title: "Week 6.1 - Who were the winners?"
+author: "Joaquin Sandoval"
+format: html
+editor: visual
+---
+
+### Goal of this assignment is to get this output: 
+
+![](images/clipboard-2805680711.png)
+
+#### Load necessary packages 
+
+```{r, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(DBI) # Makes connection to databases 
+library(duckdb)
+library(dbplyr)
+```
+
+#### Connecting to a database
+
+```{r, message=FALSE}
+conn <- DBI:: dbConnect(duckdb::duckdb(), 
+                        dbdir = "database/database.duckdb")
+```
+
+#### Load database tables 
+
+```{r}
+egg_table <- tbl(conn, "Bird_eggs")
+observers <- tbl(conn, "Personnel")
+nest_table <- tbl(conn, "Bird_nests")
+```
+
+#### Use dbplyr to write query that yields top 3 observers with most egg measurements 
+
+#### Look at each table & their attributes
+
+```{r}
+egg_table %>% 
+  collect()
+```
+
+```{r}
+observers %>% 
+  collect()
+```
+
+```{r}
+nest_table %>% 
+  collect()
+```
+
+```{r, warning=FALSE}
+top_performers <- egg_table %>%
+  # First join egg table and nest table using Nest_ID 
+  left_join(nest_table, by = "Nest_ID") %>%
+  # Second join personnel table on the observer code 
+  left_join(observers, by = c("Observer" = "Abbreviation")) %>%
+  # Sum number of eggs for each observer 
+  group_by(Name) %>%
+  summarise(total_eggs = n()) %>%
+  # Descending order 
+  arrange(desc(total_eggs)) %>% 
+  # Only top 3 
+  head(3) %>%
+  # Initiate query 
+  collect()
+
+top_performers
+```
+
+#### Closing the connection - important 
+
+```{r}
+DBI:: dbDisconnect(conn, shutdown = TRUE)
+```
